@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Galería interactiva — upDate() & deshacer() demo</title>
+  <meta name="description" content="Práctica de JavaScript DOM: funciones upDate y deshacer para hover de imágenes. Incluye depuración con console.log y accesibilidad básica." />
+  <style>
+    :root { --bg:#0b0f14; --fg:#e6edf3; --muted:#a7b0bc; --card:#0f1720; --ring:#7dd3fc; }
+    *,*::before,*::after{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#0f1720 60%);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial}
+    header{padding:2rem 1rem 1rem;text-align:center;max-width:80ch;margin:0 auto}
+    h1{margin:0 0 .25rem;font-size:clamp(1.8rem,2.5vw+1rem,3rem)}
+    h2{margin:.25rem 0 0;font-size:clamp(1.1rem,1.2vw+.8rem,1.5rem);color:var(--muted)}
+    main{max-width:1100px;margin:0 auto;padding:1rem}
+    .stage{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start}
+    @media (max-width:860px){.stage{grid-template-columns:1fr}}
+    /* Panel de previsualización */
+    #imagen{min-height:320px;background-image:url("");background-size:cover;background-position:center;background-repeat:no-repeat;border:1px solid rgba(255,255,255,.1);border-radius:16px;display:flex;align-items:center;justify-content:center;padding:1.2rem;text-align:center}
+    #imagen p{margin:0;font-size:1.1rem;color:var(--muted)}
+    /* Galería */
+    .galeria{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem}
+    figure{margin:0;background:var(--card);border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+    img.preview{display:block;width:100%;height:140px;object-fit:cover;cursor:pointer}
+    figcaption{padding:.5rem .75rem;color:var(--muted);font-size:.9rem}
+    /* Foco visible para teclado */
+    .focusable{outline:none}
+    .focusable:focus-visible{box-shadow:0 0 0 3px var(--ring)}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Galería interactiva</h1>
+    <h2>Práctica de DOM: <code>upDate(previewPic)</code> y <code>deshacer()</code></h2>
+    <p>Objetivo: actualizar el <strong>texto</strong> y la <strong>imagen de fondo</strong> del panel de previsualización cuando el ratón pase por encima y al salir.</p>
+  </header>
+
+  <main class="stage" aria-describedby="help">
+    <!-- Panel de previsualización -->
+    <section>
+      <div id="imagen" aria-live="polite" aria-atomic="true">
+        <p id="texto-original">Pase el ratón por encima de una imagen para mostrarla aquí</p>
+      </div>
+      <p id="help" class="sr-only">Coloca el ratón sobre una miniatura para ver su versión ampliada en el panel de previsualización y su texto alternativo.</p>
+    </section>
+
+    <!-- Miniaturas -->
+    <section>
+      <div class="galeria" id="galeria">
+        <!-- Cada IMG tiene class="preview" y dispara onmouseover / onmouseout -->
+        <figure>
+          <img class="preview focusable" tabindex="0" src="https://picsum.photos/id/1018/640/400" alt="Carretera costera al atardecer con mar a la izquierda" onmouseover="upDate(this)" onmouseout="deshacer()" />
+          <figcaption>Ruta oceánica</figcaption>
+        </figure>
+        <figure>
+          <img class="preview focusable" tabindex="0" src="https://picsum.photos/id/1025/640/400" alt="Primer plano de un perro husky mirando a cámara" onmouseover="upDate(this)" onmouseout="deshacer()" />
+          <figcaption>Husky en la nieve</figcaption>
+        </figure>
+        <figure>
+          <img class="preview focusable" tabindex="0" src="https://picsum.photos/id/1035/640/400" alt="Bosque denso con niebla matinal entre los árboles" onmouseover="upDate(this)" onmouseout="deshacer()" />
+          <figcaption>Bosque con niebla</figcaption>
+        </figure>
+        <figure>
+          <img class="preview focusable" tabindex="0" src="https://picsum.photos/id/1050/640/400" alt="Ciudad nocturna con luces reflejadas en el río" onmouseover="upDate(this)" onmouseout="deshacer()" />
+          <figcaption>Reflejos urbanos</figcaption>
+        </figure>
+        <figure>
+          <img class="preview focusable" tabindex="0" src="https://picsum.photos/id/1069/640/400" alt="Montañas nevadas bajo cielo azul profundo" onmouseover="upDate(this)" onmouseout="deshacer()" />
+          <figcaption>Cordillera nevada</figcaption>
+        </figure>
+        <figure>
+          <img class="preview focusable" tabindex="0" src="https://picsum.photos/id/1074/640/400" alt="Campo de lavanda con líneas moradas hacia el horizonte" onmouseover="upDate(this)" onmouseout="deshacer()" />
+          <figcaption>Lavandas al horizonte</figcaption>
+        </figure>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // === Variables base ===
+    const panel = document.getElementById('imagen');
+    const textoOriginal = document.getElementById('texto-original');
+    const mensajeDefault = 'Pase el ratón por encima de una imagen para mostrarla aquí';
+
+    // === Requisito: función upDate(previewPic) ===
+    function upDate(previewPic){
+      console.log('[upDate] evento disparado');
+      // 1) Mostrar datos útiles de previewPic para depuración
+      console.log(' - alt:', previewPic.alt);
+      console.log(' - src:', previewPic.src);
+
+      // 2) Cambiar el texto del elemento con id="imagen"
+      //    - Eliminamos el párrafo inicial si existe y mostramos el alt
+      const altText = previewPic.alt || 'Imagen sin descripción';
+      panel.textContent = altText; // reemplaza el contenido por texto plano accesible
+
+      // 3) Cambiar la imagen de fondo del elemento con id="imagen"
+      panel.style.backgroundImage = `url('${previewPic.src}')`;
+
+      // Mejora accesible: asegurar contraste del texto sobre imagen
+      panel.style.textShadow = '0 1px 2px rgba(0,0,0,.7)';
+      panel.style.color = 'white';
+    }
+
+    // === Requisito: función deshacer() ===
+    function deshacer(){
+      console.log('[deshacer] restaurando panel');
+      // 1) Restaurar la url de fondo
+      panel.style.backgroundImage = "url('')"; // valor original
+      // 2) Restaurar el texto original
+      panel.innerHTML = `<p id="texto-original">${mensajeDefault}</p>`;
+      // 3) Opcional: limpiar estilos auxiliares
+      panel.style.textShadow = '';
+      panel.style.color = '';
+    }
+
+    // === Extras profesionales (no obligatorios) ===
+    // Soporte de teclado: equivalente a hover usando focus/blur y Enter/Espacio
+    document.querySelectorAll('img.preview').forEach(img => {
+      img.addEventListener('focus', () => upDate(img));
+      img.addEventListener('blur', deshacer);
+      img.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter' || e.key === ' '){
+          e.preventDefault();
+          upDate(img);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
